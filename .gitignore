@@ -17,16 +17,16 @@ __pycache__/
 *.pkl
 *.log
 
-# Virtual environments (commented out to allow Git tracking)
-# venv/
-# venv_backend/
+# Virtual environments
+venv/
+venv_backend/
 .env
 
-# Local ChromaDB storage (commented out to allow Git tracking)
-# chromadb/
-# chroma.sqlite3
-# chroma/
-# db/
+# Local ChromaDB storage (ignore to avoid pushing large files)
+chromadb/
+chroma.sqlite3
+chroma/
+db/
 
 # Jupyter Notebooks checkpoints
 .ipynb_checkpoints/
