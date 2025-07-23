@@ -1,0 +1,64 @@
+# ===================
+# General OS / Editor
+# ===================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.bak
+*.orig
+
+# ===================
+# Python
+# ===================
+__pycache__/
+*.py[cod]
+*.pkl
+*.log
+
+# Virtual environments (commented out to allow Git tracking)
+# venv/
+# venv_backend/
+.env
+
+# Local ChromaDB storage (commented out to allow Git tracking)
+# chromadb/
+# chroma.sqlite3
+# chroma/
+# db/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# VS Code settings
+.vscode/
+
+# ===================
+# Node / Frontend
+# ===================
+node_modules/
+dist/
+build/
+.npm/
+npm-debug.log
+yarn-error.log
+
+# React cache
+.cache/
+.next/
+out/
+
+# ===================
+# Data & backups
+# ===================
+*.zip
+*.tar
+*.gz
+*.tgz
+*.7z
+
+# Ignore test data or intermediate files
+output/
+backup_data/
+torah_ai_data/
