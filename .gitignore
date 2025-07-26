@@ -22,12 +22,6 @@ venv/
 venv_backend/
 .env
 
-# Local ChromaDB storage (ignore to avoid pushing large files)
-chromadb/
-chroma.sqlite3
-chroma/
-db/
-
 # Jupyter Notebooks checkpoints
 .ipynb_checkpoints/
 
