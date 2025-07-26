@@ -56,3 +56,6 @@ out/
 output/
 backup_data/
 torah_ai_data/
+
+# Ignore ChromaDB SQLite database
+chromadb/chroma.sqlite3
