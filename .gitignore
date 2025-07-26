@@ -60,3 +60,10 @@ torah_ai_data/
 # Ignore ChromaDB SQLite database
 chromadb/chroma.sqlite3
 torah-ai-backend/chromadb/chroma.sqlite3
+
+# Ignore all ChromaDB persistent files
+**/chroma.sqlite3
+**/*.bin
+**/*.pickle
+**/index_metadata.*
+**/link_lists.bin

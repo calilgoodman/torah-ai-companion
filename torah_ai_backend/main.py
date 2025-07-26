@@ -8,7 +8,7 @@ import json
 
 app = FastAPI()
 
-# ✅ CORS configured only for production frontend (Render)
+# CORS: allow frontend (update as needed)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://torah-ai-frontend.onrender.com"],
@@ -17,12 +17,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize ChromaDB client and embedding function
+# Initialize Chroma client and embedding function
 client = PersistentClient(path="chromadb")
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
 
-# ✅ Load collections from JSON if missing
-DATA_DIR = "../data"  # adjust to "data" if this script runs from repo root
+# Path to your local data directory (adjust if needed)
+DATA_DIR = "../data"  # Use "data" if you're running from project root
 
 def load_documents_if_empty():
     for root, dirs, files in os.walk(DATA_DIR):
@@ -30,32 +30,40 @@ def load_documents_if_empty():
             if file.endswith(".json"):
                 path = os.path.join(root, file)
                 collection_name = os.path.splitext(file)[0].replace("_loadable", "").replace("_cleaned", "")
-                collection = client.get_or_create_collection(name=collection_name, embedding_function=embedding_func)
+                try:
+                    collection = client.get_or_create_collection(name=collection_name, embedding_function=embedding_func)
+                    if collection.count() == 0:
+                        with open(path, "r", encoding="utf-8") as f:
+                            data = json.load(f)
 
-                if collection.count() == 0:
-                    with open(path, "r", encoding="utf-8") as f:
-                        data = json.load(f)
+                        documents = []
+                        ids = []
+                        metadatas = []
 
-                    documents = []
-                    ids = []
-                    metadatas = []
+                        for i, entry in enumerate(data):
+                            text = entry.get("text_en", "")
+                            if not text:
+                                continue
+                            doc_id = f"{collection_name}_{i}"
+                            documents.append(text)
+                            ids.append(doc_id)
+                            metadatas.append(entry)
 
-                    for i, entry in enumerate(data):
-                        text = entry.get("text_en", "")
-                        if not text:
-                            continue
+                        if documents:
+                            collection.add(documents=documents, ids=ids, metadatas=metadatas)
+                            print(f"✅ Loaded {len(documents)} into '{collection_name}'")
+                except Exception as e:
+                    print(f"⚠️ Error loading {file}: {e}")
 
-                        doc_id = f"{collection_name}_{i}"
-                        documents.append(text)
-                        ids.append(doc_id)
-                        metadatas.append(entry)
-
-                    if documents:
-                        collection.add(documents=documents, ids=ids, metadatas=metadatas)
-                        print(f"✅ Loaded {len(documents)} documents into '{collection_name}'")
-
+# Rebuild Chroma index if needed
 load_documents_if_empty()
 
+# Used to confirm backend is running
+@app.get("/")
+def root():
+    return {"message": "Torah AI backend is live."}
+
+# Data structure for incoming queries
 class QueryRequest(BaseModel):
     prompt: str
     theme: str
@@ -94,13 +102,15 @@ def format_citation(metadata):
 
 @app.post("/query")
 async def query(request: QueryRequest):
+    print(f"🔍 Received query: {request.prompt} | Sources: {request.sources}")
     responses = {}
 
     for source_name in request.sources:
         try:
             collection = client.get_collection(name=source_name, embedding_function=embedding_func)
+            print(f"✅ Using collection: {source_name}")
         except Exception as e:
-            print(f"⚠️ Skipping unknown collection: {source_name} ({e})")
+            print(f"⚠️ Skipping collection '{source_name}': {e}")
             continue
 
         results = collection.query(
