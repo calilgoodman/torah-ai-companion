@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from chromadb import PersistentClient
 from chromadb.utils import embedding_functions
+import os
+import json
 
 app = FastAPI()
 
@@ -18,6 +20,41 @@ app.add_middleware(
 # Initialize ChromaDB client and embedding function
 client = PersistentClient(path="chromadb")
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
+
+# ✅ Load collections from JSON if missing
+DATA_DIR = "../data"  # adjust to "data" if this script runs from repo root
+
+def load_documents_if_empty():
+    for root, dirs, files in os.walk(DATA_DIR):
+        for file in files:
+            if file.endswith(".json"):
+                path = os.path.join(root, file)
+                collection_name = os.path.splitext(file)[0].replace("_loadable", "").replace("_cleaned", "")
+                collection = client.get_or_create_collection(name=collection_name, embedding_function=embedding_func)
+
+                if collection.count() == 0:
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+
+                    documents = []
+                    ids = []
+                    metadatas = []
+
+                    for i, entry in enumerate(data):
+                        text = entry.get("text_en", "")
+                        if not text:
+                            continue
+
+                        doc_id = f"{collection_name}_{i}"
+                        documents.append(text)
+                        ids.append(doc_id)
+                        metadatas.append(entry)
+
+                    if documents:
+                        collection.add(documents=documents, ids=ids, metadatas=metadatas)
+                        print(f"✅ Loaded {len(documents)} documents into '{collection_name}'")
+
+load_documents_if_empty()
 
 class QueryRequest(BaseModel):
     prompt: str
