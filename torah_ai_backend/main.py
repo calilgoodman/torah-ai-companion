@@ -8,7 +8,7 @@ import json
 
 app = FastAPI()
 
-# CORS: allow frontend (update as needed)
+# CORS: Allow frontend domain
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://torah-ai-frontend.onrender.com"],
@@ -17,15 +17,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Chroma client and embedding function
-client = PersistentClient(path="chromadb")
+# Base path setup
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CHROMA_PATH = os.getenv("CHROMA_PATH", os.path.abspath(os.path.join(BASE_DIR, "..", "chromadb")))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+# Initialize ChromaDB client and embedding function
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
+client = PersistentClient(path=CHROMA_PATH)
 
-# Path to your local data directory (adjust if needed)
-DATA_DIR = "../data"  # Use "data" if you're running from project root
+# Map frontend source names to ChromaDB collection names
+COLLECTION_NAME_MAP = {
+    "torah_texts": "torah_texts",
+    "prophets_texts": "prophets_texts",
+    "writings_texts": "writings_texts",
+    "talmud_texts": "talmud_texts",
+    "midrash_texts": "midrash_texts",
+    "halacha_texts": "halacha_texts",
+    "mitzvah_texts": "mitzvah_texts",
+    "mussar_texts": "mussar_texts",
+    "kabbalah_texts": "kabbalah_text",
+    "chasidut_texts": "chassidut_text",
+    "chassidut_texts": "chassidut_text",
+    "jewish_thought_texts": "jewish_thought_texts"
+}
 
+# Load documents only if collection is empty
 def load_documents_if_empty():
-    for root, dirs, files in os.walk(DATA_DIR):
+    for root, _, files in os.walk(DATA_DIR):
         for file in files:
             if file.endswith(".json"):
                 path = os.path.join(root, file)
@@ -36,9 +55,7 @@ def load_documents_if_empty():
                         with open(path, "r", encoding="utf-8") as f:
                             data = json.load(f)
 
-                        documents = []
-                        ids = []
-                        metadatas = []
+                        documents, ids, metadatas = [], [], []
 
                         for i, entry in enumerate(data):
                             text = entry.get("text_en", "")
@@ -55,15 +72,13 @@ def load_documents_if_empty():
                 except Exception as e:
                     print(f"⚠️ Error loading {file}: {e}")
 
-# Rebuild Chroma index if needed
+# Preload if needed
 load_documents_if_empty()
 
-# Used to confirm backend is running
 @app.get("/")
 def root():
     return {"message": "Torah AI backend is live."}
 
-# Data structure for incoming queries
 class QueryRequest(BaseModel):
     prompt: str
     theme: str
@@ -106,11 +121,13 @@ async def query(request: QueryRequest):
     responses = {}
 
     for source_name in request.sources:
+        actual_collection = COLLECTION_NAME_MAP.get(source_name, source_name)
+
         try:
-            collection = client.get_collection(name=source_name, embedding_function=embedding_func)
-            print(f"✅ Using collection: {source_name}")
+            collection = client.get_collection(name=actual_collection, embedding_function=embedding_func)
+            print(f"✅ Using collection: {actual_collection} | Count: {collection.count()}")
         except Exception as e:
-            print(f"⚠️ Skipping collection '{source_name}': {e}")
+            print(f"⚠️ Skipping collection '{actual_collection}': {e}")
             continue
 
         results = collection.query(
@@ -118,6 +135,10 @@ async def query(request: QueryRequest):
             n_results=5,
             include=["metadatas", "documents"]
         )
+
+        if not results["documents"] or not results["documents"][0]:
+            print(f"⚠️ No documents found in '{actual_collection}' for this query.")
+            continue
 
         docs = results["documents"][0]
         metas = results["metadatas"][0]
@@ -145,12 +166,12 @@ async def query(request: QueryRequest):
             citation = format_citation(meta)
 
             formatted.append({
-                "source_label": f"{source_name.replace('_texts', '').capitalize()} Source {idx}",
+                "source_label": f"{actual_collection.replace('_texts', '').capitalize()} Source {idx}",
                 "citation": citation,
                 "text_en": text_en,
                 "text_he": text_he
             })
 
-        responses[f"{source_name}_responses"] = formatted
+        responses[f"{actual_collection}_responses"] = formatted
 
     return responses
