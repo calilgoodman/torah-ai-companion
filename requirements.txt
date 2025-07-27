@@ -1,0 +1,23 @@
+# Core Backend
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+jinja2
+
+# HTTP & API handling
+httpx
+requests
+
+# OpenAI (for GPT-based embeddings)
+openai
+
+# Optional: PyTorch (only needed for local inference)
+torch
+
+# Data handling
+numpy==1.26.4  # Required for ChromaDB compatibility (np.float_ fix)
+tqdm
+
+# Vector DB
+chromadb==0.4.22  # Works with numpy 1.26.4
