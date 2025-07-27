@@ -17,10 +17,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Base path setup
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CHROMA_PATH = os.getenv("CHROMA_PATH", os.path.abspath(os.path.join(BASE_DIR, "..", "chromadb")))
-DATA_DIR = os.path.join(BASE_DIR, "data")
+# Writable path for Render
+CHROMA_PATH = os.getenv("CHROMA_PATH", "/tmp/chromadb")
+
+# Point to /app/data which is one level above torah_ai_backend/
+DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 
 # Initialize ChromaDB client and embedding function
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
@@ -44,6 +45,7 @@ COLLECTION_NAME_MAP = {
 
 # Load documents only if collection is empty
 def load_documents_if_empty():
+    print(f"📁 Scanning for files in: {DATA_DIR}")
     for root, _, files in os.walk(DATA_DIR):
         for file in files:
             if file.endswith(".json"):
