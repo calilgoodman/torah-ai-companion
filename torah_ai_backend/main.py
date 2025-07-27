@@ -17,11 +17,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Writable path for Render
+# Writable path for ChromaDB on Render
 CHROMA_PATH = os.getenv("CHROMA_PATH", "/tmp/chromadb")
 
-# Point to /app/data which is one level above torah_ai_backend/
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+# Updated: point to local data folder now inside backend
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 # Initialize ChromaDB client and embedding function
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
