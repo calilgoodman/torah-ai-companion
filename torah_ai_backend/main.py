@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from chromadb import PersistentClient
 from chromadb.utils import embedding_functions
 import os
-import json
 
 app = FastAPI()
 
@@ -17,17 +16,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Writable path for ChromaDB on Render
-CHROMA_PATH = os.getenv("CHROMA_PATH", "/tmp/chromadb")
+# Use safe, writable path for ChromaDB (Render-friendly)
+CHROMA_PATH = "/mnt/data/chromadb"
 
-# Updated: point to local data folder now inside backend
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+# Debug: confirm ChromaDB path and environment
+print(f"👀 Current working directory: {os.getcwd()}")
+print(f"📂 CHROMA_PATH = {CHROMA_PATH}")
 
-# Initialize ChromaDB client and embedding function
+# Initialize Chroma client
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
 client = PersistentClient(path=CHROMA_PATH)
 
-# Map frontend source names to ChromaDB collection names
+# Mapping frontend source identifiers to ChromaDB collection names
 COLLECTION_NAME_MAP = {
     "torah_texts": "torah_texts",
     "prophets_texts": "prophets_texts",
@@ -40,42 +40,8 @@ COLLECTION_NAME_MAP = {
     "kabbalah_texts": "kabbalah_text",
     "chasidut_texts": "chassidut_text",
     "chassidut_texts": "chassidut_text",
-    "jewish_thought_texts": "jewish_thought_texts"
+    "jewish_thought_texts": "jewish_thought_text"
 }
-
-# Load documents only if collection is empty
-def load_documents_if_empty():
-    print(f"📁 Scanning for files in: {DATA_DIR}")
-    for root, _, files in os.walk(DATA_DIR):
-        for file in files:
-            if file.endswith(".json"):
-                path = os.path.join(root, file)
-                collection_name = os.path.splitext(file)[0].replace("_loadable", "").replace("_cleaned", "")
-                try:
-                    collection = client.get_or_create_collection(name=collection_name, embedding_function=embedding_func)
-                    if collection.count() == 0:
-                        with open(path, "r", encoding="utf-8") as f:
-                            data = json.load(f)
-
-                        documents, ids, metadatas = [], [], []
-
-                        for i, entry in enumerate(data):
-                            text = entry.get("text_en", "")
-                            if not text:
-                                continue
-                            doc_id = f"{collection_name}_{i}"
-                            documents.append(text)
-                            ids.append(doc_id)
-                            metadatas.append(entry)
-
-                        if documents:
-                            collection.add(documents=documents, ids=ids, metadatas=metadatas)
-                            print(f"✅ Loaded {len(documents)} into '{collection_name}'")
-                except Exception as e:
-                    print(f"⚠️ Error loading {file}: {e}")
-
-# Preload if needed
-load_documents_if_empty()
 
 @app.get("/")
 def root():
