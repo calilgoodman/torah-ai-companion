@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ChromaDB disk path on Render
+# ChromaDB paths
 CHROMA_PATH = "/mnt/data/chromadb"
 ZIP_PATH = "/mnt/data/chromadb.zip"
 REMOTE_ZIP = "https://www.dropbox.com/scl/fi/wpp9hofyot4ndodulgeig/chromadb.zip?rlkey=lxhltl43vv04088i47ha2uw0y&st=fhl3da13&dl=1"
@@ -26,6 +26,10 @@ REMOTE_ZIP = "https://www.dropbox.com/scl/fi/wpp9hofyot4ndodulgeig/chromadb.zip?
 # Download and unzip if not already extracted
 if not os.path.exists(CHROMA_PATH):
     print("⬇️ Downloading chromadb.zip from Dropbox...")
+
+    # ✅ Ensure /mnt/data exists before downloading
+    os.makedirs(os.path.dirname(ZIP_PATH), exist_ok=True)
+
     urllib.request.urlretrieve(REMOTE_ZIP, ZIP_PATH)
 
     print("📦 Extracting chromadb.zip...")
@@ -53,8 +57,7 @@ COLLECTION_NAME_MAP = {
     "mussar_texts": "mussar_texts",
     "kabbalah_texts": "kabbalah_text",
     "chasidut_texts": "chassidut_text",
-    "chassidut_texts": "chassidut_text",  # handles both spellings
-    "jewish_thought_texts": "jewish_thought_text"
+    "jewish_thought_texts": "jewish_thought_texts"
 }
 
 CITATION_TITLE_MAP = {
