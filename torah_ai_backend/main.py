@@ -6,6 +6,7 @@ from chromadb.utils import embedding_functions
 import os
 import zipfile
 import urllib.request
+import shutil
 
 app = FastAPI()
 
@@ -21,21 +22,26 @@ app.add_middleware(
 # ChromaDB paths
 CHROMA_PATH = "/mnt/data/chromadb"
 ZIP_PATH = "/mnt/data/chromadb.zip"
-REMOTE_ZIP = "https://www.dropbox.com/scl/fi/wpp9hofyot4ndodulgeig/chromadb.zip?rlkey=lxhltl43vv04088i47ha2uw0y&st=fhl3da13&dl=1"
+REMOTE_ZIP = "https://www.dropbox.com/scl/fi/xisf4ta1bik7o3jpkrj49/chromadb.zip?rlkey=syzwp7fpetsgh2bo9ropqzafw&st=0yvm3top&dl=1"
 
 # Download and unzip if not already extracted
-if not os.path.exists(CHROMA_PATH):
+if not os.path.exists(os.path.join(CHROMA_PATH, "chroma.sqlite3")):
     print("⬇️ Downloading chromadb.zip from Dropbox...")
 
-    # ✅ Ensure /mnt/data exists before downloading
+    # Ensure /mnt/data exists
     os.makedirs(os.path.dirname(ZIP_PATH), exist_ok=True)
+
+    # Clean up any old ChromaDB if needed
+    if os.path.exists(CHROMA_PATH):
+        print("🧹 Removing old ChromaDB directory...")
+        shutil.rmtree(CHROMA_PATH)
 
     urllib.request.urlretrieve(REMOTE_ZIP, ZIP_PATH)
 
     print("📦 Extracting chromadb.zip...")
     os.makedirs(CHROMA_PATH, exist_ok=True)
     with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
-        zip_ref.extractall("/mnt/data")
+        zip_ref.extractall(CHROMA_PATH)
 
     print("✅ Unzip complete.")
 else:
