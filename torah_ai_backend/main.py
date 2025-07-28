@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from chromadb import PersistentClient
 from chromadb.utils import embedding_functions
 import os
+import zipfile
+import urllib.request
 
 app = FastAPI()
 
@@ -16,18 +18,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Use safe, writable path for ChromaDB (Render-friendly)
+# ChromaDB disk path on Render
 CHROMA_PATH = "/mnt/data/chromadb"
+ZIP_PATH = "/mnt/data/chromadb.zip"
+REMOTE_ZIP = "https://www.dropbox.com/scl/fi/wpp9hofyot4ndodulgeig/chromadb.zip?rlkey=lxhltl43vv04088i47ha2uw0y&st=fhl3da13&dl=1"
 
-# Debug: confirm ChromaDB path and environment
-print(f"👀 Current working directory: {os.getcwd()}")
-print(f"📂 CHROMA_PATH = {CHROMA_PATH}")
+# Download and unzip if not already extracted
+if not os.path.exists(CHROMA_PATH):
+    print("⬇️ Downloading chromadb.zip from Dropbox...")
+    urllib.request.urlretrieve(REMOTE_ZIP, ZIP_PATH)
 
-# Initialize Chroma client
+    print("📦 Extracting chromadb.zip...")
+    os.makedirs(CHROMA_PATH, exist_ok=True)
+    with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
+        zip_ref.extractall("/mnt/data")
+
+    print("✅ Unzip complete.")
+else:
+    print("📁 ChromaDB already exists on disk.")
+
+# Initialize ChromaDB client
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
 client = PersistentClient(path=CHROMA_PATH)
 
-# Mapping frontend source identifiers to ChromaDB collection names
+# Frontend source name → collection name map
 COLLECTION_NAME_MAP = {
     "torah_texts": "torah_texts",
     "prophets_texts": "prophets_texts",
@@ -39,20 +53,9 @@ COLLECTION_NAME_MAP = {
     "mussar_texts": "mussar_texts",
     "kabbalah_texts": "kabbalah_text",
     "chasidut_texts": "chassidut_text",
-    "chassidut_texts": "chassidut_text",
+    "chassidut_texts": "chassidut_text",  # handles both spellings
     "jewish_thought_texts": "jewish_thought_text"
 }
-
-@app.get("/")
-def root():
-    return {"message": "Torah AI backend is live."}
-
-class QueryRequest(BaseModel):
-    prompt: str
-    theme: str
-    main: str
-    sub: str
-    sources: list
 
 CITATION_TITLE_MAP = {
     "shaarei_teshuvah": "Shaarei Teshuvah",
@@ -65,6 +68,17 @@ CITATION_TITLE_MAP = {
     "mesillat_yesharim": "Mesillat Yesharim",
     "sefer_hachinuch": "Sefer HaChinuch",
 }
+
+@app.get("/")
+def root():
+    return {"message": "Torah AI backend is live."}
+
+class QueryRequest(BaseModel):
+    prompt: str
+    theme: str
+    main: str
+    sub: str
+    sources: list
 
 def format_citation(metadata):
     if metadata.get("book") == "Zohar" and metadata.get("parsha") and metadata.get("chapter"):
