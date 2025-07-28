@@ -57,9 +57,15 @@ output/
 backup_data/
 torah_ai_data/
 
+# Ignore all raw input JSON source files
+torah_ai_backend/data/
 
 # Ignore all ChromaDB persistent files
 **/*.bin
 **/*.pickle
 **/index_metadata.*
 **/link_lists.bin
+
+# Dropbox zip file
+torah_ai_backend/chromadb.zip
+chromadb/
