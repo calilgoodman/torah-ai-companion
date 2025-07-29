@@ -19,24 +19,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ChromaDB paths
-CHROMA_PATH = "/mnt/data/chromadb"
-ZIP_PATH = "/mnt/data/chromadb.zip"
+# Read CHROMA_PATH from environment (Render sets this)
+CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data")
+ZIP_PATH = os.path.join(CHROMA_PATH, "chromadb.zip")
 REMOTE_ZIP = "https://www.dropbox.com/scl/fi/xisf4ta1bik7o3jpkrj49/chromadb.zip?rlkey=syzwp7fpetsgh2bo9ropqzafw&st=0yvm3top&dl=1"
 SQLITE_FILE = os.path.join(CHROMA_PATH, "chroma.sqlite3")
 
-# Ensure /mnt/data/chromadb directory exists
+# Ensure the directory exists
 os.makedirs(CHROMA_PATH, exist_ok=True)
 
 # Download and unzip if the database file doesn't exist
 if not os.path.exists(SQLITE_FILE):
     print("⬇️ Downloading chromadb.zip from Dropbox...")
 
-    # Clean up any old ChromaDB directory
-    if os.path.exists(CHROMA_PATH):
-        print("🧹 Removing old ChromaDB directory...")
-        shutil.rmtree(CHROMA_PATH)
-    os.makedirs(CHROMA_PATH, exist_ok=True)
+    # Clean up old contents
+    for item in os.listdir(CHROMA_PATH):
+        item_path = os.path.join(CHROMA_PATH, item)
+        if os.path.isdir(item_path):
+            shutil.rmtree(item_path)
+        elif item_path != ZIP_PATH:
+            os.remove(item_path)
 
     urllib.request.urlretrieve(REMOTE_ZIP, ZIP_PATH)
 
