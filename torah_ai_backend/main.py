@@ -23,23 +23,24 @@ app.add_middleware(
 CHROMA_PATH = "/mnt/data/chromadb"
 ZIP_PATH = "/mnt/data/chromadb.zip"
 REMOTE_ZIP = "https://www.dropbox.com/scl/fi/xisf4ta1bik7o3jpkrj49/chromadb.zip?rlkey=syzwp7fpetsgh2bo9ropqzafw&st=0yvm3top&dl=1"
+SQLITE_FILE = os.path.join(CHROMA_PATH, "chroma.sqlite3")
 
-# Download and unzip if not already extracted
-if not os.path.exists(os.path.join(CHROMA_PATH, "chroma.sqlite3")):
+# Ensure /mnt/data/chromadb directory exists
+os.makedirs(CHROMA_PATH, exist_ok=True)
+
+# Download and unzip if the database file doesn't exist
+if not os.path.exists(SQLITE_FILE):
     print("⬇️ Downloading chromadb.zip from Dropbox...")
 
-    # Ensure /mnt/data exists
-    os.makedirs(os.path.dirname(ZIP_PATH), exist_ok=True)
-
-    # Clean up any old ChromaDB if needed
+    # Clean up any old ChromaDB directory
     if os.path.exists(CHROMA_PATH):
         print("🧹 Removing old ChromaDB directory...")
         shutil.rmtree(CHROMA_PATH)
+    os.makedirs(CHROMA_PATH, exist_ok=True)
 
     urllib.request.urlretrieve(REMOTE_ZIP, ZIP_PATH)
 
     print("📦 Extracting chromadb.zip...")
-    os.makedirs(CHROMA_PATH, exist_ok=True)
     with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
         zip_ref.extractall(CHROMA_PATH)
 
