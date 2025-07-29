@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Read CHROMA_PATH from environment (Render sets this)
+# Read ChromaDB path from environment (e.g., CHROMA_PATH=/mnt/data)
 CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data")
 ZIP_PATH = os.path.join(CHROMA_PATH, "chromadb.zip")
 REMOTE_ZIP = "https://www.dropbox.com/scl/fi/xisf4ta1bik7o3jpkrj49/chromadb.zip?rlkey=syzwp7fpetsgh2bo9ropqzafw&st=0yvm3top&dl=1"
@@ -32,13 +32,10 @@ os.makedirs(CHROMA_PATH, exist_ok=True)
 if not os.path.exists(SQLITE_FILE):
     print("⬇️ Downloading chromadb.zip from Dropbox...")
 
-    # Clean up old contents
-    for item in os.listdir(CHROMA_PATH):
-        item_path = os.path.join(CHROMA_PATH, item)
-        if os.path.isdir(item_path):
-            shutil.rmtree(item_path)
-        elif item_path != ZIP_PATH:
-            os.remove(item_path)
+    # Clean up the entire folder before unzip
+    print("🧹 Clearing CHROMA_PATH before unzip...")
+    shutil.rmtree(CHROMA_PATH, ignore_errors=True)
+    os.makedirs(CHROMA_PATH, exist_ok=True)
 
     urllib.request.urlretrieve(REMOTE_ZIP, ZIP_PATH)
 
@@ -57,15 +54,15 @@ client = PersistentClient(path=CHROMA_PATH)
 # Frontend source name → collection name map
 COLLECTION_NAME_MAP = {
     "torah_texts": "torah_texts",
-    "prophets_texts": "prophets_texts",
-    "writings_texts": "writings_texts",
+    "prophets_texts": "navi_texts",
+    "writings_texts": "ketuvim_texts",
     "talmud_texts": "talmud_texts",
     "midrash_texts": "midrash_texts",
     "halacha_texts": "halacha_texts",
     "mitzvah_texts": "mitzvah_texts",
     "mussar_texts": "mussar_texts",
     "kabbalah_texts": "kabbalah_text",
-    "chasidut_texts": "chassidut_text",
+    "chasidut_texts": "chassidut_texts",
     "jewish_thought_texts": "jewish_thought_texts"
 }
 
