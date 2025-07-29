@@ -19,38 +19,35 @@ app.add_middleware(
 )
 
 # Constants
-CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data")
+CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data/chromadb")
 ZIP_PATH = os.path.join(CHROMA_PATH, "chromadb.zip")
-SQLITE_FILE = os.path.join(CHROMA_PATH, "chroma.sqlite3")
-REMOTE_ZIP = "https://www.dropbox.com/scl/fi/nclakj789742422yemtya/chroma.sqlite3.zip?rlkey=63cvtya89bvxiqg4urjn5ccio&st=y5vgckbt&dl=1"
+REMOTE_ZIP = "https://www.dropbox.com/scl/fi/aosp4l255q7osp2ofipkg/chromadb_backup.zip?rlkey=xi544ppm8lodehif01199leq8&st=1dewihwv&dl=1"
+COLLECTIONS_PATH = os.path.join(CHROMA_PATH, "collections")
 
-
-# Ensure ChromaDB folder exists
+# Ensure ChromaDB directory exists
 os.makedirs(CHROMA_PATH, exist_ok=True)
 
-# Download & extract ChromaDB zip if not already present
-if not os.path.exists(SQLITE_FILE):
-    print("⬇️ No existing database found — downloading from Dropbox...")
+# Download & extract backup zip if full ChromaDB is missing
+if not os.path.exists(COLLECTIONS_PATH):
+    print("⬇️ No ChromaDB collections found — downloading backup from Dropbox...")
     response = requests.get(REMOTE_ZIP)
-    print("📄 Content-Type:", response.headers.get("Content-Type"))
-    print("🧪 First 100 bytes:", response.content[:100])
 
     with open(ZIP_PATH, "wb") as f:
         f.write(response.content)
 
     if zipfile.is_zipfile(ZIP_PATH):
-        print("✅ ZIP is valid. Extracting...")
+        print("✅ ZIP is valid. Extracting contents...")
         with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
             zip_ref.extractall(CHROMA_PATH)
-        print("📂 Extraction complete!")
+        print(f"📂 Extraction complete to {CHROMA_PATH}")
     else:
         raise ValueError("❌ The downloaded file is not a valid ZIP archive.")
 
     os.remove(ZIP_PATH)
 else:
-    print("✅ Existing database found — skipping download.")
+    print("✅ ChromaDB already initialized — skipping download.")
 
-# Initialize ChromaDB client
+# Initialize Chroma client
 client = PersistentClient(path=CHROMA_PATH)
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
 
