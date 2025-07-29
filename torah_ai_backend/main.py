@@ -4,165 +4,76 @@ from fastapi.middleware.cors import CORSMiddleware
 from chromadb import PersistentClient
 from chromadb.utils import embedding_functions
 import os
+import requests
 import zipfile
-import urllib.request
-import shutil
 
 app = FastAPI()
 
 # CORS: Allow frontend domain
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://torah-ai-frontend.onrender.com"],
+    allow_origins=["https://torah-ai-frontend.onrender.com"],  # ✅ Update if needed
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Read ChromaDB path from environment (e.g., CHROMA_PATH=/mnt/data)
+# Constants
 CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data")
 ZIP_PATH = os.path.join(CHROMA_PATH, "chromadb.zip")
-REMOTE_ZIP = "https://www.dropbox.com/scl/fi/xisf4ta1bik7o3jpkrj49/chromadb.zip?rlkey=syzwp7fpetsgh2bo9ropqzafw&st=0yvm3top&dl=1"
 SQLITE_FILE = os.path.join(CHROMA_PATH, "chroma.sqlite3")
+REMOTE_ZIP = "https://www.dropbox.com/scl/fi/xisf4ta1bik7o3jpkrj49/chromadb.zip?rlkey=syzwp7fpetsgh2bo9ropqzafw&st=0yvm3top&dl=1"
 
-# Ensure the directory exists
+# Ensure /mnt/data exists
 os.makedirs(CHROMA_PATH, exist_ok=True)
 
-# Download and unzip if the database file doesn't exist
+# Download and extract ZIP if needed
 if not os.path.exists(SQLITE_FILE):
-    print("⬇️ Downloading chromadb.zip from Dropbox...")
+    print("⬇️ No existing database found — downloading from Dropbox...")
+    response = requests.get(REMOTE_ZIP)
 
-    # Clean up the entire folder before unzip
-    print("🧹 Clearing CHROMA_PATH before unzip...")
-    shutil.rmtree(CHROMA_PATH, ignore_errors=True)
-    os.makedirs(CHROMA_PATH, exist_ok=True)
+    print("📄 Content-Type:", response.headers.get("Content-Type"))
+    print("🧪 First 100 bytes:", response.content[:100])
 
-    urllib.request.urlretrieve(REMOTE_ZIP, ZIP_PATH)
+    with open(ZIP_PATH, "wb") as f:
+        f.write(response.content)
 
-    print("📦 Extracting chromadb.zip...")
-    with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
-        zip_ref.extractall(CHROMA_PATH)
+    if zipfile.is_zipfile(ZIP_PATH):
+        print("✅ ZIP is valid. Extracting...")
+        with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
+            zip_ref.extractall(CHROMA_PATH)
+        print("📂 Extraction complete!")
+    else:
+        raise ValueError("❌ The downloaded file is not a valid ZIP archive.")
 
-    print("✅ Unzip complete.")
+    # Optional: Clean up
+    os.remove(ZIP_PATH)
+
 else:
-    print("📁 ChromaDB already exists on disk.")
+    print("✅ Existing database found — skipping download.")
 
 # Initialize ChromaDB client
-embedding_func = embedding_functions.DefaultEmbeddingFunction()
 client = PersistentClient(path=CHROMA_PATH)
 
-# Frontend source name → collection name map
-COLLECTION_NAME_MAP = {
-    "torah_texts": "torah_texts",
-    "prophets_texts": "navi_texts",
-    "writings_texts": "ketuvim_texts",
-    "talmud_texts": "talmud_texts",
-    "midrash_texts": "midrash_texts",
-    "halacha_texts": "halacha_texts",
-    "mitzvah_texts": "mitzvah_texts",
-    "mussar_texts": "mussar_texts",
-    "kabbalah_texts": "kabbalah_text",
-    "chasidut_texts": "chassidut_texts",
-    "jewish_thought_texts": "jewish_thought_texts"
-}
+# Set up default embedding function
+embedding_func = embedding_functions.DefaultEmbeddingFunction()
 
-CITATION_TITLE_MAP = {
-    "shaarei_teshuvah": "Shaarei Teshuvah",
-    "tomer_devorah": "Tomer Devorah",
-    "sefer_hayirah": "Sefer HaYirah",
-    "orchot_tzadikim": "Orchot Tzadikim",
-    "sefer_hayashar": "Sefer HaYashar",
-    "iggeret_haramban": "Iggeret HaRamban",
-    "iggeret_hagra": "Iggeret HaGra",
-    "mesillat_yesharim": "Mesillat Yesharim",
-    "sefer_hachinuch": "Sefer HaChinuch",
-}
-
-@app.get("/")
-def root():
-    return {"message": "Torah AI backend is live."}
-
-class QueryRequest(BaseModel):
+# Pydantic model for query input
+class QueryInput(BaseModel):
     prompt: str
     theme: str
     main: str
     sub: str
-    sources: list
-
-def format_citation(metadata):
-    if metadata.get("book") == "Zohar" and metadata.get("parsha") and metadata.get("chapter"):
-        return f"Zohar: {metadata['parsha']}, Chapter {metadata['chapter']}"
-    elif metadata.get("start") and metadata.get("end"):
-        return f"{metadata['start']}–{metadata['end']}"
-    elif metadata.get("verse_range"):
-        return metadata["verse_range"]
-    elif metadata.get("book") and metadata.get("start"):
-        return f"{metadata['book']} {metadata['start']}"
-    elif metadata.get("citation"):
-        raw = metadata["citation"]
-        return CITATION_TITLE_MAP.get(raw.lower(), raw)
-    elif metadata.get("book") and metadata.get("chapter"):
-        return f"{metadata['book']}, Chapter {metadata['chapter']}"
-    else:
-        return "Unknown"
+    sources: list[str]
 
 @app.post("/query")
-async def query(request: QueryRequest):
-    print(f"🔍 Received query: {request.prompt} | Sources: {request.sources}")
-    responses = {}
-
-    for source_name in request.sources:
-        actual_collection = COLLECTION_NAME_MAP.get(source_name, source_name)
-
-        try:
-            collection = client.get_collection(name=actual_collection, embedding_function=embedding_func)
-            print(f"✅ Using collection: {actual_collection} | Count: {collection.count()}")
-        except Exception as e:
-            print(f"⚠️ Skipping collection '{actual_collection}': {e}")
-            continue
-
-        results = collection.query(
-            query_texts=[request.prompt],
-            n_results=5,
-            include=["metadatas", "documents"]
+def query_torah_ai(input: QueryInput):
+    results = []
+    for source in input.sources:
+        collection = client.get_or_create_collection(source, embedding_function=embedding_func)
+        query_result = collection.query(
+            query_texts=[input.prompt],
+            n_results=3
         )
-
-        if not results["documents"] or not results["documents"][0]:
-            print(f"⚠️ No documents found in '{actual_collection}' for this query.")
-            continue
-
-        docs = results["documents"][0]
-        metas = results["metadatas"][0]
-
-        formatted = []
-        for idx, (meta, doc) in enumerate(zip(metas, docs), start=1):
-            text_en = meta.get("text_en", "").strip()
-            text_he = meta.get("text_he", "").strip()
-
-            if not text_en and not text_he:
-                parts = doc.split("||")
-                if len(parts) == 2:
-                    text_en = parts[0].strip()
-                    text_he = parts[1].strip()
-                else:
-                    text_en = doc.strip()
-                    text_he = "(Hebrew unavailable)"
-            elif not text_en:
-                text_en = doc.strip().split("||")[0].strip()
-            elif not text_he:
-                parts = doc.split("||")
-                if len(parts) > 1:
-                    text_he = parts[1].strip()
-
-            citation = format_citation(meta)
-
-            formatted.append({
-                "source_label": f"{actual_collection.replace('_texts', '').capitalize()} Source {idx}",
-                "citation": citation,
-                "text_en": text_en,
-                "text_he": text_he
-            })
-
-        responses[f"{actual_collection}_responses"] = formatted
-
-    return responses
+        results.append({source: query_result})
+    return results
