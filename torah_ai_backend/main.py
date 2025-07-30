@@ -9,7 +9,7 @@ import zipfile
 
 app = FastAPI()
 
-# CORS setup
+# CORS: Allow frontend domain
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://torah-ai-frontend.onrender.com"],
@@ -18,20 +18,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === Constants ===
+# Constants
 CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data")
-ZIP_PATH = os.path.join(CHROMA_PATH, "chroma_sqlite_only.zip")
+ZIP_PATH = os.path.join(CHROMA_PATH, "chromadb.zip")
 SQLITE_FILE = os.path.join(CHROMA_PATH, "chroma.sqlite3")
-REMOTE_ZIP = "https://www.dropbox.com/scl/fi/mjsnoli3ptvm8gfdt12om/chroma.sqlite3-1.zip?rlkey=r8re6a6jduvs2rzrny582j865&st=jahedv1r&dl=1"
+REMOTE_ZIP = "https://www.dropbox.com/scl/fi/mjsnoli3ptvm8gfdt12om/chroma.sqlite3-1.zip?rlkey=r8re6a6jduvs2rzrny582j865&st=jahedv1r&dl=1"  # ✅ FIXED: dl=1
 
-
-# Ensure ChromaDB folder exists
+# Ensure directory exists
 os.makedirs(CHROMA_PATH, exist_ok=True)
 
-# Download & extract Chroma zip if SQLite not present
+# Download and extract ZIP if needed
 if not os.path.exists(SQLITE_FILE):
     print("⬇️ No existing database found — downloading from Dropbox...")
     response = requests.get(REMOTE_ZIP)
+
     print("📄 Content-Type:", response.headers.get("Content-Type"))
     print("🧪 First 100 bytes:", response.content[:100])
 
@@ -43,18 +43,17 @@ if not os.path.exists(SQLITE_FILE):
         with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
             zip_ref.extractall(CHROMA_PATH)
         print("📂 Extraction complete!")
+        os.remove(ZIP_PATH)
     else:
         raise ValueError("❌ The downloaded file is not a valid ZIP archive.")
-
-    os.remove(ZIP_PATH)
 else:
     print("✅ Existing database found — skipping download.")
 
-# === Initialize ChromaDB client ===
+# Initialize ChromaDB client
 client = PersistentClient(path=CHROMA_PATH)
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
 
-# === Input model ===
+# Input schema
 class QueryInput(BaseModel):
     prompt: str
     theme: str
@@ -62,19 +61,14 @@ class QueryInput(BaseModel):
     sub: str
     sources: list[str]
 
-# === Query endpoint ===
 @app.post("/query")
 def query_torah_ai(input: QueryInput):
     results = []
     for source in input.sources:
         collection = client.get_or_create_collection(source, embedding_function=embedding_func)
-
         query_result = collection.query(
             query_texts=[input.prompt],
-            n_results=3,
-            include=["documents", "metadatas"]
+            n_results=3
         )
-
         results.append({source: query_result})
-
     return results
