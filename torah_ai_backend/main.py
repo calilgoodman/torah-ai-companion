@@ -22,7 +22,7 @@ app.add_middleware(
 CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data")
 ZIP_PATH = os.path.join(CHROMA_PATH, "chromadb.zip")
 SQLITE_FILE = os.path.join(CHROMA_PATH, "chroma.sqlite3")
-REMOTE_ZIP = "https://www.dropbox.com/scl/fi/mjsnoli3ptvm8gfdt12om/chroma.sqlite3-1.zip?rlkey=r8re6a6jduvs2rzrny582j865&st=jahedv1r&dl=1"  # ✅ FIXED: dl=1
+REMOTE_ZIP = "https://www.dropbox.com/scl/fi/019j9l2a58yb6489dkums/data.zip?rlkey=5w9arrpjbeqkdjpaay8qwlt7t&st=g7dr9ddt&dl=1"  # ✅ UPDATED to data.zip with dl=1
 
 # Ensure directory exists
 os.makedirs(CHROMA_PATH, exist_ok=True)
@@ -43,6 +43,7 @@ if not os.path.exists(SQLITE_FILE):
         with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
             zip_ref.extractall(CHROMA_PATH)
         print("📂 Extraction complete!")
+        print("📁 Files in CHROMA_PATH:", os.listdir(CHROMA_PATH))  # ✅ Added logging
         os.remove(ZIP_PATH)
     else:
         raise ValueError("❌ The downloaded file is not a valid ZIP archive.")
