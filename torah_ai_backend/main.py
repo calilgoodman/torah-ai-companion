@@ -22,7 +22,8 @@ app.add_middleware(
 CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data")
 ZIP_PATH = os.path.join(CHROMA_PATH, "chroma_sqlite_only.zip")
 SQLITE_FILE = os.path.join(CHROMA_PATH, "chroma.sqlite3")
-REMOTE_ZIP = "https://www.dropbox.com/scl/fi/zaeo6mh5gzl90804p6zdw/chroma_sqlite_only.zip?rlkey=v7cy035jxyn57k2vz9v7ohupm&st=6xcutyg8&dl=1"
+REMOTE_ZIP = "https://www.dropbox.com/scl/fi/mjsnoli3ptvm8gfdt12om/chroma.sqlite3-1.zip?rlkey=r8re6a6jduvs2rzrny582j865&st=jahedv1r&dl=1"
+
 
 # Ensure ChromaDB folder exists
 os.makedirs(CHROMA_PATH, exist_ok=True)
