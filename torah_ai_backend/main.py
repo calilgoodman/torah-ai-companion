@@ -18,40 +18,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Constants
-CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data/chromadb")
+# === Constants ===
+CHROMA_PATH = os.environ.get("CHROMA_PATH", "/mnt/data")
 ZIP_PATH = os.path.join(CHROMA_PATH, "chroma_sqlite_only.zip")
+SQLITE_FILE = os.path.join(CHROMA_PATH, "chroma.sqlite3")
 REMOTE_ZIP = "https://www.dropbox.com/scl/fi/zaeo6mh5gzl90804p6zdw/chroma_sqlite_only.zip?rlkey=v7cy035jxyn57k2vz9v7ohupm&st=6xcutyg8&dl=1"
-COLLECTIONS_PATH = os.path.join(CHROMA_PATH, "collections")
 
-# Ensure ChromaDB directory exists
+# Ensure ChromaDB folder exists
 os.makedirs(CHROMA_PATH, exist_ok=True)
 
-# Download & extract backup zip if full ChromaDB is missing
-if not os.path.exists(COLLECTIONS_PATH):
-    print("⬇️ No ChromaDB collections found — downloading backup from Dropbox...")
+# Download & extract Chroma zip if SQLite not present
+if not os.path.exists(SQLITE_FILE):
+    print("⬇️ No existing database found — downloading from Dropbox...")
     response = requests.get(REMOTE_ZIP)
+    print("📄 Content-Type:", response.headers.get("Content-Type"))
+    print("🧪 First 100 bytes:", response.content[:100])
 
     with open(ZIP_PATH, "wb") as f:
         f.write(response.content)
 
     if zipfile.is_zipfile(ZIP_PATH):
-        print("✅ ZIP is valid. Extracting contents...")
+        print("✅ ZIP is valid. Extracting...")
         with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
             zip_ref.extractall(CHROMA_PATH)
-        print(f"📂 Extraction complete to {CHROMA_PATH}")
+        print("📂 Extraction complete!")
     else:
         raise ValueError("❌ The downloaded file is not a valid ZIP archive.")
 
     os.remove(ZIP_PATH)
 else:
-    print("✅ ChromaDB already initialized — skipping download.")
+    print("✅ Existing database found — skipping download.")
 
-# Initialize Chroma client
+# === Initialize ChromaDB client ===
 client = PersistentClient(path=CHROMA_PATH)
 embedding_func = embedding_functions.DefaultEmbeddingFunction()
 
-# Input model
+# === Input model ===
 class QueryInput(BaseModel):
     prompt: str
     theme: str
@@ -59,7 +61,7 @@ class QueryInput(BaseModel):
     sub: str
     sources: list[str]
 
-# Query endpoint
+# === Query endpoint ===
 @app.post("/query")
 def query_torah_ai(input: QueryInput):
     results = []
