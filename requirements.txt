@@ -1,51 +1,49 @@
-# Core & FastAPI
+# Core AI dependencies
+torch==2.1.2
+transformers==4.25.1
+sentence-transformers==2.2.2
+InstructorEmbedding==1.0.1
+scikit-learn==1.3.2
+numpy==1.26.4
+
+# Hugging Face Hub — must match above transformer versions
+huggingface-hub==0.10.1
+
+# FastAPI backend
 fastapi==0.116.1
 uvicorn==0.35.0
 starlette==0.47.1
 
-# Chroma & embeddings
+# ChromaDB
 chromadb==0.4.22
-InstructorEmbedding==1.0.1
-sentence-transformers==2.2.2
-transformers==4.40.2
-torch==2.7.1
-scikit-learn==1.3.2
-numpy==1.26.4
+chroma-hnswlib==0.7.3
+pypika==0.48.9
 
-# Zip utils & Dropbox
-requests==2.32.4
-zipfile36==0.1.3
-
-# CORS & Environment
+# Utilities & tools
 python-dotenv==1.1.1
-python-dateutil==2.9.0.post0
-pydantic==2.11.7
-pydantic_core==2.33.2
-
-# Utilities
+requests==2.32.4
 tqdm==4.67.1
 tenacity==9.1.2
-typing_extensions==4.14.1
-typing-inspection==0.4.1
-
-# Chroma dependencies
-chroma-hnswlib==0.7.3
 protobuf==6.31.1
-onnxruntime==1.22.1
-h11==0.16.0
-huggingface-hub==0.10.1
 filelock==3.18.0
 packaging==25.0
 mmh3==5.1.0
+
+# Async support
+anyio==4.9.0
+sniffio==1.3.1
+uvloop==0.21.0
+watchfiles==1.1.0
 
 # Logging
 coloredlogs==15.0.1
 humanfriendly==10.0
 
-# Optional, async
-anyio==4.9.0
-sniffio==1.3.1
+# Security
+bcrypt==4.3.0
 
-# Deployment
-uvloop==0.21.0
-watchfiles==1.1.0
+# Deployment-related
+python-dateutil==2.9.0.post0
+typing_extensions==4.14.1
+pydantic==2.11.7
+pydantic_core==2.33.2
