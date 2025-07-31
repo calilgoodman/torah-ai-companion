@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from chromadb import PersistentClient
 from chromadb.utils import embedding_functions
-from query_rewriter import generate_semantic_query  # ✅ Import query rewriter
+from torah_ai_backend.query_rewriter import generate_semantic_query
 import os
 import requests
 import zipfile
