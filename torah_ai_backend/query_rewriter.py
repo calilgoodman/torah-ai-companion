@@ -24,4 +24,5 @@ def generate_semantic_query(prompt: str, theme: str, main: str, sub: str) -> lis
         f"Subcategory: {sub}\n"
         f"User Question: {prompt}"
     )
-    return instructor_model.encode([[task_instruction, combined_input]])[0]
+    embedding = instructor_model.encode([[task_instruction, combined_input]])[0]
+    return embedding.tolist()
