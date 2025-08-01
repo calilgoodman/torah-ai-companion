@@ -1,18 +1,19 @@
+# query_rewriter.py
 from InstructorEmbedding import INSTRUCTOR
 
-# Load the Instructor model once
-instructor_model = INSTRUCTOR('hkunlp/instructor-large')  # or 'instructor-xl'
+# Load the Instructor model once (you can switch to 'instructor-xl' if preferred)
+instructor_model = INSTRUCTOR('hkunlp/instructor-base')
 
 def generate_semantic_query(prompt: str, theme: str, main: str, sub: str) -> list:
     """
     Generate a semantically rich embedding for a user prompt using thematic context.
-    
+
     Args:
         prompt (str): The raw user question.
         theme (str): The selected theme.
         main (str): The main category under the theme.
         sub (str): The subcategory under the main category.
-    
+
     Returns:
         List[float]: The embedding vector for ChromaDB search.
     """
