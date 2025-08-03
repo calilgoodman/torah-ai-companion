@@ -1,25 +1,25 @@
-# Core AI dependencies
+# === Core AI Dependencies (XL-compatible) ===
 torch==2.1.2
-transformers==4.25.1
-sentence-transformers==2.2.2
-InstructorEmbedding==1.0.1
+transformers==4.39.3
+sentence-transformers==2.6.1
+InstructorEmbedding==1.1.0
 scikit-learn==1.3.2
 numpy==1.26.4
 
-# Hugging Face Hub — must match above transformer versions
-huggingface-hub==0.10.1
+# === Hugging Face Hub ===
+huggingface-hub==0.22.2
 
-# FastAPI backend
+# === FastAPI Backend ===
 fastapi==0.116.1
 uvicorn==0.35.0
 starlette==0.47.1
 
-# ChromaDB
+# === ChromaDB ===
 chromadb==0.4.22
 chroma-hnswlib==0.7.3
 pypika==0.48.9
 
-# Utilities & tools
+# === Utilities & Tools ===
 python-dotenv==1.1.1
 requests==2.32.4
 tqdm==4.67.1
@@ -29,20 +29,20 @@ filelock==3.18.0
 packaging==25.0
 mmh3==5.1.0
 
-# Async support
+# === Async Support ===
 anyio==4.9.0
 sniffio==1.3.1
 uvloop==0.21.0
 watchfiles==1.1.0
 
-# Logging
+# === Logging ===
 coloredlogs==15.0.1
 humanfriendly==10.0
 
-# Security
+# === Security ===
 bcrypt==4.3.0
 
-# Deployment-related
+# === Deployment & Typing ===
 python-dateutil==2.9.0.post0
 typing_extensions==4.14.1
 pydantic==2.11.7
